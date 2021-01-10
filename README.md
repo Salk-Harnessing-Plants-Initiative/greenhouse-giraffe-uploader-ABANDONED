@@ -1,2 +1,2 @@
 # Greenhouse giraffe uploader
-The "giraffe" is a custom imaging apparatus we use in our lab. This script processes its images.
+The "giraffe" is a custom imaging apparatus we use in our greenhouse. This script processes its images.
