@@ -1,0 +1,3 @@
+[submodule "desktop-uploader"]
+	path = desktop-uploader
+	url = https://github.com/Salk-Harnessing-Plants-Initiative/aws-s3-desktop-uploader
