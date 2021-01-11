@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 boxsdk = "*"
 aws-s3-desktop-uploader = {editable = true, path = "./aws-s3-desktop-uploader"}
+pyzbar = "*"
+pillow = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 

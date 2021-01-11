@@ -19,10 +19,3 @@ while True:
 
 
 
-lock = threading.Lock()
-
-while True:
-	with lock:
-		t = threading.Timer(3.0, hello)
-		t.start()
-	t.join()
