@@ -1,10 +1,6 @@
-from aws_s3_desktop_uploader import desktop_uploader
-print(desktop_uploader.get_file_created("test/iguana.jpg"))
-
-"""
 import json
 import boxsdk as box
-
+from aws_s3_desktop_uploader import desktop_uploader
 
 with open('config.json') as f:
 	config = json.load(f)
@@ -17,12 +13,11 @@ with open('config.json') as f:
 	root_folder = client.folder(folder_id='0')
 	shared_folder = root_folder.create_subfolder('hello_world')
 	uploaded_file = shared_folder.upload('test/iguana.jpg')
-	shared_link = shared_folder.get_shared_link()
-	print(shared_link)
 
 if __name__ == "__main__":
 	print("Hi")
-"""
+	print(desktop_uploader.get_file_created("test/iguana.jpg"))
+
 
 
 
