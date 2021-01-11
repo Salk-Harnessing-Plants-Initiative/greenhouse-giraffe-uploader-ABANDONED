@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+boxsdk = "*"
+aws-s3-desktop-uploader = {editable = true, path = "./aws-s3-desktop-uploader"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.7"
