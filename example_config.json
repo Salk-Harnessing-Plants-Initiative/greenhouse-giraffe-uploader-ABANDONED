@@ -1,5 +1,12 @@
 {
-	"client_id" : "",
-	"client_secret" : "",
-	"access_token" : ""
+	"unprocessed_dir" : "",
+	"error_dir" : "",
+	"done_dir" : "",
+	"postgres" : {
+		"user" : "",
+		"password" : "",
+		"host" : "",
+		"port" : "",
+		"database" : ""
+	}
 }

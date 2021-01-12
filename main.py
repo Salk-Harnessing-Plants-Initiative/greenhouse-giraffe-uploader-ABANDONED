@@ -27,22 +27,28 @@ except:
     pass
 lock = threading.Lock()
 t = None
-
+auth = boxsdk.JWTAuth.from_settings_file('box_config.json')
+client = boxsdk.Client(auth)
 with open('config.json') as f:
     config = json.load(f)
-    oauth = boxsdk.OAuth2(
-        client_id=config['client_id'],
-        client_secret=config['client_secret'],
-        access_token=config['access_token'] # developer token
-    )
-    client = boxsdk.Client(oauth)
-    unprocessed_dir = config['unprocessed_dir']
-    error_dir = config['error_dir']
-    done_dir = config['done_dir']
+unprocessed_dir = config['unprocessed_dir']
+error_dir = config['error_dir']
+done_dir = config['done_dir']
+postgres = config['postgres']
 
-    # Assert none of the dirs are the same as another
-    dirs = [unprocessed_dir, error_dir, done_dir]
-    assert (len(dirs) == len(set(dirs)))
+# None of the dirs should be the same as another
+dirs = [unprocessed_dir, error_dir, done_dir]
+assert (len(dirs) == len(set(dirs)))
+# Check Box connection
+client.user().get()
+# Check postgres connection
+connection = psycopg2.connect(user=postgres['user'],
+    password=postgres['password'],
+    host=postgres['host'],
+    port=postgres['port'],
+    database=postgres['database']
+)
+connection.cursor().execute("SELECT version();")
 
 def process():
     files = sorted([file for file in os.listdir(unprocessed_dir) if file.lower() != ".DS_Store".lower()])
@@ -70,18 +76,12 @@ def update_reference(qr_code):
     section_id = qr_code
     try:
         # Connect to an existing database
-        """
-        connection = psycopg2.connect(user=os.environ['user'],
-                                      password=os.environ['password'],
-                                      host=os.environ['host'],
-                                      port=os.environ['port'],
-                                      database=os.environ['database'])
-        """
-        connection = psycopg2.connect(user=sys.argv[1],
-                                      password=sys.argv[2],
-                                      host=sys.argv[3],
-                                      port=sys.argv[4],
-                                      database=sys.argv[5])
+        connection = psycopg2.connect(user=postgres['user'],
+            password=postgres['password'],
+            host=postgres['host'],
+            port=postgres['port'],
+            database=postgres['database']
+        )
         # Create a cursor to perform database operations
         cursor = connection.cursor()
         # Executing a SQL query
@@ -103,10 +103,8 @@ def update_reference(qr_code):
     
 def upload_to_box(file):
     root_folder = client.folder(folder_id=last_reference['box_folder_id']).get()
-    print(root_folder)
     folders = [item for item in root_folder.get_items() if type(item) == boxsdk.object.folder.Folder]
     folder_names = [folder.name for folder in folders]
-    print(folder_names)
     todays_date = datetime.today().strftime('%Y-%m-%d') # todo: replace with file creation time
     if todays_date not in folder_names:
         date_folder = root_folder.create_subfolder(todays_date)
@@ -125,7 +123,6 @@ class GiraffeEventHandler(FileSystemEventHandler):
         if is_file:
             # Attempt to cancel the thread if in countdown mode
             with lock:
-                print("interrupted!")
                 t.cancel()
 
 def main():
@@ -145,7 +142,6 @@ def main():
     # run process() with countdown indefinitely
     while True:
         with lock:
-            print("Starting countdown")
             t = threading.Timer(SECONDS_DELAY, process)
             t.start()
         t.join()

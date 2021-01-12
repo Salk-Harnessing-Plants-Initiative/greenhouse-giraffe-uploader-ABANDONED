@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-boxsdk = "*"
+boxsdk = {extras = ["jwt"], version = "*"}
 aws-s3-desktop-uploader = {editable = true, path = "./aws-s3-desktop-uploader"}
 pyzbar = "*"
 pillow = "*"
