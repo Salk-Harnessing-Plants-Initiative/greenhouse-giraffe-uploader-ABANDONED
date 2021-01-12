@@ -45,12 +45,9 @@ with open('config.json') as f:
     assert (len(dirs) == len(set(dirs)))
 
 def process():
-    files = sorted(os.listdir(unprocessed_dir))
+    files = sorted([file for file in os.listdir(unprocessed_dir) if file.lower() != ".DS_Store".lower()])
     print("Processing files in the order: {}".format(files))
     for file in files:
-        # Filter out unaccepted files
-        if file.lower() == ".DS_Store".lower():
-            continue
         path = os.path.join(unprocessed_dir, file)
         # QR code if present
         try:
@@ -63,12 +60,11 @@ def process():
         try:
             upload_to_box(path)
             # upload_to_s3(path)
-        except:
-            error_path = desktop_uploader.make_parallel_path(unprocessed_dir, error_dir, path)
-            desktop_uploader.move(path, error_path)
-        finally:
             done_path = desktop_uploader.make_parallel_path(unprocessed_dir, done_dir, path)
             desktop_uploader.move(path, done_path)
+        except Exception as e:
+            error_path = desktop_uploader.make_parallel_path(unprocessed_dir, error_dir, path)
+            desktop_uploader.move(path, error_path)
 
 def update_reference(qr_code):
     section_id = qr_code
@@ -128,10 +124,12 @@ class GiraffeEventHandler(FileSystemEventHandler):
         is_file = not event.is_directory
         if is_file:
             # Attempt to cancel the thread if in countdown mode
-            with t.lock():
+            with lock:
+                print("interrupted!")
                 t.cancel()
 
 def main():
+    global t
     # process() will run after the countdown if not interrupted during countdown
     with lock:
         t = threading.Timer(SECONDS_DELAY, process)
@@ -147,10 +145,11 @@ def main():
     # run process() with countdown indefinitely
     while True:
         with lock:
+            print("Starting countdown")
             t = threading.Timer(SECONDS_DELAY, process)
             t.start()
         t.join()
 
 if __name__ == "__main__":
-    print("running...")
+    print("Running Greenhouse Giraffe Uploader...")
     main()
