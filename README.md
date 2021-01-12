@@ -24,3 +24,8 @@ pipenv run python get_email_address.py
 cp example_config.json config.json
 ```
 Then fill out the settings
+
+# To run
+```
+pipenv run python main.py
+```
