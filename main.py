@@ -16,10 +16,7 @@ from watchdog.events import FileSystemEventHandler, FileCreatedEvent
 # (For bug workaround for watchdog 1.0.1)
 from watchdog.utils import platform as watchdog_platform
 from watchdog.observers.polling import PollingObserver
-
-
 # print(desktop_uploader.get_file_created("test/iguana.jpg"))
-
 
 SECONDS_DELAY = 10.0
 last_reference = {}
@@ -29,6 +26,7 @@ try:
 except:
     pass
 lock = threading.Lock()
+t = None
 
 with open('config.json') as f:
     config = json.load(f)
@@ -48,14 +46,20 @@ with open('config.json') as f:
 
 def process():
     files = sorted(os.listdir(unprocessed_dir))
+    print("Processing files in the order: {}".format(files))
     for file in files:
+        # Filter out unaccepted files
+        if file.lower() == ".DS_Store".lower():
+            continue
         path = os.path.join(unprocessed_dir, file)
+        # QR code if present
         try:
             qr_codes = [qr_object.date.decode() for qr_object in decode(Image.open(file))]
             for qr_code in qr_codes:
                 update_reference(qr_code)
         except:
             pass
+        # Process
         try:
             upload_to_box(path)
             # upload_to_s3(path)
@@ -123,10 +127,14 @@ class GiraffeEventHandler(FileSystemEventHandler):
     def on_created(self, event):
         is_file = not event.is_directory
         if is_file:
+            # Attempt to cancel the thread if in countdown mode
             with t.lock():
                 t.cancel()
 
 def main():
+    # process() will run after the countdown if not interrupted during countdown
+    with lock:
+        t = threading.Timer(SECONDS_DELAY, process)
     # Setup the watchdog handler for new files that are added while the script is running
     if watchdog_platform.is_darwin():
         # Bug workaround for watchdog 1.0.1
@@ -136,14 +144,12 @@ def main():
     observer.schedule(GiraffeEventHandler(), unprocessed_dir, recursive=True)
     observer.start()
 
+    # run process() with countdown indefinitely
     while True:
         with lock:
             t = threading.Timer(SECONDS_DELAY, process)
             t.start()
         t.join()
-
-with lock:
-    t = threading.Timer(SECONDS_DELAY, process)
 
 if __name__ == "__main__":
     print("running...")
