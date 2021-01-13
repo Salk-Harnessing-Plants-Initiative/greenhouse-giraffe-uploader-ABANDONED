@@ -38,18 +38,16 @@ postgres = config['postgres']
 
 print("Double checking everything...")
 # None of the dirs should be the same as another
-dirs = [unprocessed_dir, error_dir, done_dir]
-assert (len(dirs) == len(set(dirs)))
+assert (len([unprocessed_dir, error_dir, done_dir]) == len(set([unprocessed_dir, error_dir, done_dir])))
 # Check Box connection
 client.user().get()
 # Check postgres connection
-connection = psycopg2.connect(user=postgres['user'],
+psycopg2.connect(user=postgres['user'],
     password=postgres['password'],
     host=postgres['host'],
     port=postgres['port'],
     database=postgres['database']
-)
-connection.cursor().execute("SELECT version();")
+).cursor().execute("SELECT version();")
 
 def process():
     files = sorted([file for file in os.listdir(unprocessed_dir) if file.lower() != ".DS_Store".lower()])
