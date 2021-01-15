@@ -64,7 +64,8 @@ def process():
             pass
         # Process
         try:
-            upload_to_box(path)
+            for match in last_reference['matches']:
+                upload_to_box(path, match['box_folder_id'])
             # upload_to_s3(path)
             done_path = desktop_uploader.make_parallel_path(unprocessed_dir, done_dir, path)
             desktop_uploader.move(path, done_path)
@@ -74,9 +75,8 @@ def process():
             desktop_uploader.move(path, error_path)
 
 def update_reference(qr_code):
-    section_id = qr_code
     try:
-        # Connect to an existing database
+        # Connect to database
         connection = psycopg2.connect(user=postgres['user'],
             password=postgres['password'],
             host=postgres['host'],
@@ -86,12 +86,20 @@ def update_reference(qr_code):
         # Create a cursor to perform database operations
         cursor = connection.cursor()
         # Executing a SQL query
-        result = cursor.execute("SELECT box_folder_id, experiment_id, section_name FROM greenhouse_section WHERE section_id = '{}'"
-            .format(section_id))
-        last_reference['box_folder_id'] = result[0][0]
-        last_reference['experiment_id'] = result[0][1]
-        last_reference['section_name'] = result[0][2]
-        print("Updated to box_folder_id {}, experiment_id {}".format(box_folder_id, experiment_id))
+        query = (
+            "SELECT box_folder_id, experiment_id, section_name FROM greenhouse_box"
+            "INNER JOIN section USING(section_name)"
+            "WHERE section_id = '{value}' OR section_name = '{value}';".format(value=qr_code)
+        )
+        results = cursor.execute(query)
+        for result in results:
+            match = {}
+            match['box_folder_id'] = result[0]
+            match['experiment_id'] = result[1]
+            match['section_name'] = result[2]
+            last_reference['matches'].append(match)
+
+        print("Updated to {}".format(last_reference))
         with open('persist.json', 'w') as f:
             json.dump(last_reference, f)
 
@@ -113,8 +121,8 @@ def get_subfolder(box_folder, subfolder_name):
             if subfolder.name == subfolder_name:
                 return subfolder
 
-def upload_to_box(file, use_date_subfolder=True, use_section_subfolder=True):
-    root_folder = client.folder(folder_id=last_reference['box_folder_id']).get()
+def upload_to_box(file, box_folder_id, use_date_subfolder=True, use_section_subfolder=True):
+    root_folder = client.folder(folder_id=box_folder_id).get()
     current_folder = root_folder
 
     if use_date_subfolder:
