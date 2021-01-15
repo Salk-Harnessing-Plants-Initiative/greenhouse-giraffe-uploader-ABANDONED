@@ -8,5 +8,10 @@
 		"host" : "",
 		"port" : "",
 		"database" : ""
+	},
+	"cloudwatch" : {
+  		"log_group" : "",
+  		"stream_name": "",
+  		"send_interval" : 1
 	}
 }
