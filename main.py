@@ -56,6 +56,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
+"""
 watchtower_handler = watchtower.CloudWatchLogHandler(
     log_group=cloudwatch["log_group"],
     stream_name=cloudwatch["stream_name"],
@@ -63,6 +64,7 @@ watchtower_handler = watchtower.CloudWatchLogHandler(
     create_log_group=False
 )
 logger.addHandler(watchtower_handler)
+"""
 
 def process():
     logger = logging.getLogger(__name__)
