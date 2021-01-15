@@ -13,11 +13,10 @@ from aws_s3_desktop_uploader import desktop_uploader
 # For detecting new files
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent
-# (For bug workaround for watchdog 1.0.1)
-from watchdog.utils import platform as watchdog_platform
-from watchdog.observers.polling import PollingObserver
 # print(desktop_uploader.get_file_created("test/iguana.jpg"))
 
+# Global
+logger = logging.getLogger(__name__)
 SECONDS_DELAY = 10.0
 last_reference = {}
 try:
@@ -36,7 +35,8 @@ error_dir = config['error_dir']
 done_dir = config['done_dir']
 postgres = config['postgres']
 
-print("Double checking everything...")
+# Fail on startup if something's wrong
+print("Checking the connections...")
 # None of the dirs should be the same as another
 assert (len([unprocessed_dir, error_dir, done_dir]) == len(set([unprocessed_dir, error_dir, done_dir])))
 # Check Box connection
@@ -50,7 +50,7 @@ psycopg2.connect(user=postgres['user'],
 ).cursor().execute("SELECT version();")
 
 def process():
-    files = sorted([file for file in os.listdir(unprocessed_dir) if file.lower() != ".DS_Store".lower()])
+    files = sorted([file for file in os.listdir(unprocessed_dir) if not f[0] == '.'])
     if len(files) > 0:
         print("Processing files in the order: {}".format(files))
     for file in files:
@@ -143,19 +143,21 @@ def main():
     with lock:
         t = threading.Timer(SECONDS_DELAY, process)
     # Setup the watchdog handler for new files that are added while the script is running
-    if watchdog_platform.is_darwin():
-        # Bug workaround for watchdog 1.0.1
-        observer = PollingObserver()
-    else:
-        observer = Observer()
+    observer = Observer()
     observer.schedule(GiraffeEventHandler(), unprocessed_dir, recursive=True)
     observer.start()
-
     # run process() with countdown indefinitely
-    while True:
-        with lock:
-            t = threading.Timer(SECONDS_DELAY, process)
-            t.start()
+    try:
+        while True:
+            with lock:
+                t = threading.Timer(SECONDS_DELAY, process)
+                t.start()
+            t.join()
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt: shutting down...")
+        observer.stop()
+        observer.join()
+        t.stop()
         t.join()
 
 if __name__ == "__main__":

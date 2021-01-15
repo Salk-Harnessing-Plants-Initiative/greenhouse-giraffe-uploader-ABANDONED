@@ -9,6 +9,7 @@ aws-s3-desktop-uploader = {editable = true, path = "./aws-s3-desktop-uploader"}
 pyzbar = "*"
 pillow = "*"
 psycopg2-binary = "*"
+watchdog = "==1.0.2"
 
 [dev-packages]
 
